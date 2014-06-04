@@ -1,0 +1,35 @@
+interface Convertible
+{
+ abstract public function transform($secs);
+}
+
+
+abstract class Vehicle ()
+{
+  public function __construct()
+  {
+        echo 'Vehicle Constructor';
+  }
+  
+  abstract public function drive();
+  
+  
+}
+
+class Car extends Vehicle implements Convertible
+{
+
+    public function __construct()
+    {
+        $veh_obj = new Vehicle();
+        
+        echo 'Car Constructor';
+    }
+  public function transform($secs)
+  {
+    echo 'time:'.$secs;
+  }
+}
+
+$ocar_bj = new Car();
+echo $car_obj->transform(5);
