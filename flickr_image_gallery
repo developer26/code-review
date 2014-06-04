@@ -1,0 +1,315 @@
+<?php
+header("Content-Type:text/html");
+echo '<?xml version="1.0" encoding="utf-8"?>';
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <title>Flickr Image Gallery</title>
+	<style type="text/css">
+BODY
+{
+ 	margin-left: 20px;
+ 	margin-top: 50px;
+ 	margin-right: 20px;
+}
+.Heading 
+{
+	COLOR: rgb(187,0,0); FONT-FAMILY: Verdana; FONT-SIZE: 10pt; FONT-WEIGHT: bold; TEXT-DECORATION: none
+}
+.button
+{
+	FONT-FAMILY: Verdana;
+	border:solid 1px #808000; 
+	FONT-SIZE: 9pt;
+	BACKGROUND-COLOR:#9999FF;
+	COLOR: rgb(255,255,255);
+	CURSOR: hand
+}
+.smlLink {
+	COLOR: rgb(255,0,0); FONT-FAMILY: Verdana; FONT-SIZE: 8pt; TEXT-DECORATION: none; font-weight:bold
+}
+.smlLink:hover {
+	COLOR: rgb(255,0,0); FONT-FAMILY: Verdana; FONT-SIZE: 8pt; TEXT-DECORATION: underline; font-weight:bold
+}
+.smlTextGreen
+{
+	font-family: Verdana, Helvetica, Arial;
+	font-size: 8pt;
+	color: rgb(0,128,0);
+}
+.smlTextRed
+{
+	font-family: Verdana, Helvetica, Arial;
+	font-size: 8pt;
+	color: rgb(255, 0, 0);
+	font-weight:bold
+}
+.smlTextBlack
+{
+	font-family: Verdana, Helvetica, Arial;
+	font-size: 10pt;
+	color: rgb(0,0,0);
+}
+.smlTextBlackBold
+{
+	font-family: Verdana, Helvetica, Arial;
+	font-size: 10pt;
+	color: rgb(255,255,255);
+	BACKGROUND-COLOR:#9999FF;
+	FONT-WEIGHT: bold
+}
+.smlTextBox
+{
+	font-family: Verdana, Helvetica, Arial;
+	border:solid 1px #000000; 
+	font-size: 8pt;
+}
+div.pagination 
+{
+	padding: 3px;
+	margin: 3px;
+}
+
+div.pagination a 
+{
+	padding: 2px 5px 2px 5px;
+	margin: 2px;
+	border: 1px solid #AAAADD;
+	text-decoration: none; /* no underline */
+	color: #000099;
+}
+div.pagination a:hover, div.pagination a:active 
+{
+	border: 1px solid #000099;
+	color: #000;
+}
+div.pagination span.current 
+{
+	padding: 2px 5px 2px 5px;
+	margin: 2px;
+	border: 2px solid #FF0000;
+	font-weight: bold;
+	color: #000099;
+}
+
+	
+</style>
+  </head>
+  <body>
+<div align="center">
+<form action="<?php echo $_SERVER['PHP_SELF']?>" method="GET">
+
+<table border="0" width="471" cellspacing="0" cellpadding="2">
+    <tr>
+      <td height="50" colspan="3" align="center" class="Heading">Image Gallery </td>
+      </tr>
+    
+    <tr>
+      <td width="150" height="26" align="right" class="smlTextBlack">Enter Keyword</td>
+      <td width="11"></td>
+      <td width="298"><input type="text" name="keyword" size="20" value="<?php echo isset($_GET['keyword'])?$_GET['keyword']:"";?>" class="smlTextBox">
+        <input name="submit" type="submit" class="button" value="Show Images" /></td>
+    </tr>
+    
+    <tr>
+      <td width="150" align="right"></td>
+      <td width="11"></td>
+      <td width="298">&nbsp;</td>
+    </tr>
+	<tr>
+			  <td align="center" colspan="3" height="20">&nbsp;</td>
+    </tr>
+</table>
+</form>	
+<?php
+//}
+?>
+<?php
+
+if (isset($_GET['keyword'])) 
+{
+   search_flickr($_GET['keyword']);
+} 
+
+# uses libcurl to return the response body of a GET request on $url
+function getResource($url)
+{
+  $chandle = curl_init();
+  curl_setopt($chandle, CURLOPT_URL, $url);
+  curl_setopt($chandle, CURLOPT_RETURNTRANSFER, 1);
+  $result = curl_exec($chandle);
+  curl_close($chandle);
+  return $result;
+}
+
+
+
+function search_flickr($keyword) 
+{
+  $keyword = urlencode($keyword);
+
+  $api_key = "d8848612f82c7f249f474b1d0316dff3"; //insert your own Flickr API KEY here
+  $per_page="5";//This value can be changed anytime
+  $nPageNo = (isset($_GET["pgno"]))?abs($_GET["pgno"]):1; // It shows the Page Number
+  
+  $url = "http://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=$api_key&text=$keyword&per_page=$per_page&page=$nPageNo";
+  
+  $feed = getResource($url);   
+  $xml = simplexml_load_string($feed);
+
+$NumRecords=$xml->photos['total']; //Total number of photos for {$keyword}
+
+if($NumRecords > 0)
+   {
+			if($per_page != $NumRecords)
+				{
+					$NumRecordsPerPage = $per_page; 
+					$TotalPage = ceil($NumRecords/$NumRecordsPerPage);//Total Page is = Number of Records / Records per page, rounded up.
+					$nPageNo = ($nPageNo > $TotalPage)?$TotalPage:$nPageNo;
+					$StartRecNo = ($nPageNo -1) * $NumRecordsPerPage;// Display the Starting Record Number
+					$intEndRow = $StartRecNo + $NumRecordsPerPage;
+					$intEndRow = ($intEndRow > $NumRecords)?$NumRecords:$intEndRow;// Display the End Record Number
+					
+				}
+				else
+				{
+					$StartRecNo = 0;
+					$TotalPage = 1;
+				}
+	
+
+?>
+
+<table height="119" border="0" cellpadding="5" cellspacing="5" class="smlTextBlack">
+
+		  <tr>
+			<td colspan="6" align="left">&nbsp;</td>
+		  </tr>
+		  <tr>
+			  <td colspan="6" align="left">Found <font class="smlTextRed"><?php echo $NumRecords;?></font> Images, displaying <strong><?php echo $StartRecNo + 1?></strong> to <strong><?php echo isset($intEndRow)?$intEndRow:$NumRecords?></td>
+		</tr>
+			
+			<tr>
+			<?php
+					foreach ($xml->photos->photo as $photo) 
+					{
+					  $title = $photo['title'];// Shows the Title of the Photo
+					  $farmid = $photo['farm'];// Shows the Farm ID of the Photo
+					  $serverid = $photo['server'];// Shows the Server ID of the Photo
+					  $id = $photo['id'];// Shows the ID of the Photo
+					  $secret = $photo['secret'];// Shows the Secret Key of the Photo
+					  $thumb_url = "http://farm".$farmid.".static.flickr.com/".$serverid."/".$id."_".$secret."_t.jpg";// Shows the URL of Thumbnail Photo
+					  $page_url = "http://farm".$farmid.".static.flickr.com/".$serverid."/".$id."_".$secret."_z.jpg";// Shows the URL of Full Size Photo
+					  $image_html= "<a href='$page_url' target='_blank'><img title='$title' src='$thumb_url'/></a>";// Display the Image along with link
+			  ?>
+					  
+			
+			<td align="center" valign="middle"><?=$image_html?></td>
+			<?php
+					}
+			
+			?>
+</tr>
+			
+<?php
+	
+	$prev = $nPageNo - 1;	//Previous page is nPageNo - 1
+	$next = $nPageNo + 1;	//Next page is nPageNo + 1
+	$adjacents = 3; // Number of adjacent pages to be shown on either side
+	$pagination = "";
+	
+	if($TotalPage > 1)
+	{	
+		$pagination .= "<div class=\"pagination\">";
+		//Previous button
+		if ($nPageNo > 1) 
+			$pagination.= "<a href=\"flickr_image_gallery.php?keyword=$keyword&pgno=$prev\"><< Previous</a>";
+		else
+			$pagination.= "";	
+		
+		//Pages	
+		if ($TotalPage < 7 + ($adjacents * 2))	//not enough pages to bother breaking it up
+		{	
+			for ($counter = 1; $counter <= $TotalPage; $counter++)
+			{
+				if ($counter == $nPageNo)
+					$pagination.= "<span class=\"current\">$counter</span>";
+				else
+					$pagination.= "<a href=\"flickr_image_gallery.php?keyword=$keyword&pgno=$counter\">$counter</a>";					
+			}
+		}
+		elseif($TotalPage > 5 + ($adjacents * 2))	//enough pages to hide some
+		{
+			//close to beginning; only hide later pages
+			if($nPageNo < 1 + ($adjacents * 2))		
+			{
+				for ($counter = 1; $counter < 4 + ($adjacents * 2); $counter++)
+				{
+					if ($counter == $nPageNo)
+						$pagination.= "<span class=\"current\">$counter</span>";
+					else
+						$pagination.= "<a href=\"flickr_image_gallery.php?keyword=$keyword&pgno=$counter\">$counter</a>";					
+				}
+				$pagination.= "...";
+				
+			}
+			//in middle; hide some front and some back
+			elseif($TotalPage - ($adjacents * 2) > $nPageNo && $nPageNo > ($adjacents * 2))
+			{
+				$pagination.= "<a href=\"flickr_image_gallery.php?keyword=$keyword&pgno=1\">1</a>";
+				$pagination.= "<a href=\"flickr_image_gallery.php?keyword=$keyword&pgno=2\">2</a>";
+				$pagination.= "...";
+				for ($counter = $nPageNo - $adjacents; $counter <= $nPageNo + $adjacents; $counter++)
+				{
+					if ($counter == $nPageNo)
+						$pagination.= "<span class=\"current\">$counter</span>";
+					else
+						$pagination.= "<a href=\"flickr_image_gallery.php?keyword=$keyword&pgno=$counter\">$counter</a>";					
+				}
+				$pagination.= "...";
+				
+			}
+			//close to end; only hide early pages
+			else
+			{
+				$pagination.= "<a href=\"flickr_image_gallery.php?keyword=$keyword&pgno=1\">1</a>";
+				$pagination.= "<a href=\"flickr_image_gallery.php?keyword=$keyword&pgno=2\">2</a>";
+				$pagination.= "...";
+				for ($counter = $TotalPage - (2 + ($adjacents * 2)); $counter <= $TotalPage; $counter++)
+				{
+					if ($counter == $nPageNo)
+						$pagination.= "<span class=\"current\">$counter</span>";
+					else
+						$pagination.= "<a href=\"flickr_image_gallery.php?keyword=$keyword&pgno=$counter\">$counter</a>";					
+				}
+			}
+		}
+		
+		//Next button
+		if ($nPageNo < $counter - 1) 
+			$pagination.= "<a href=\"flickr_image_gallery.php?keyword=$keyword&pgno=$next\">Next >></a>";
+		else
+			$pagination.= "";
+		$pagination.= "</div>\n";		
+	}
+	?>
+				  
+			<tr>
+			  <td align="center" colspan="5"><?=$pagination?>&nbsp;</td>
+			  
+			</tr>
+			</table>
+			<?php
+		}
+			else
+			{
+				echo '<font class=smlTextRed>Sorry !!! No Images Available for this keyword...</font>';
+			}
+		}
+			?>
+  </div>
+  </body>
+</html>
