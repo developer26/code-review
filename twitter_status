@@ -1,0 +1,204 @@
+<?php
+$conn=@mysql_connect("localhost", "root", "");// Connect to localhost
+$db=@mysql_select_db("parsing"); // Select your Database. Here, the database name is 'parsing'.
+error_reporting(E_ALL ^ E_NOTICE);// Suppress Error Notice
+
+function get_data($url)
+{
+  $ch = curl_init();
+  $timeout = 5;
+  curl_setopt($ch,CURLOPT_URL,$url);
+  curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
+  curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,$timeout);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+  $data = curl_exec($ch);
+  curl_close($ch);
+  return $data;
+}
+if(isset($_GET["opt"]))
+{
+	switch($_GET["opt"])
+	{
+		case "add":
+			$NValue=$_POST["NValue"];
+			
+			$json = get_data("https://api.twitter.com/1/statuses/user_timeline.json?include_entities=true&include_rts=true&screen_name=$NValue&count=10");
+			
+			// Here, table name is "twitter". 
+			mysql_query("TRUNCATE TABLE `parsing`.`twitter`", $conn);
+			
+			if ($json != false)
+			{
+				$obj = json_decode($json);
+			
+				foreach($obj as $var => $value)
+				{
+				   /* echo "Message number: ". $var." <br/>";    
+					echo "Name: " . $obj[$var]->user->name. "<br/>";   
+					echo "Handle: " . $obj[$var]->user->screen_name . "<br/>";        
+					echo "Message: " . $obj[$var]->text. "<br/>";           
+					echo "Created: " . $obj[$var]->created_at . "<br/>";                    
+					echo "URL: " . $obj[$var]->user->url . "<br/>";
+					echo "Location: " . $obj[$var]->user->location . "<br/>";       
+					echo "<br/>";*/
+					$date=date("Y-m-d H:i:s", strtotime($obj[$var]->created_at));
+					
+					mysql_query("INSERT into twitter(author, status, showdate) values('".$obj[$var]->user->name."', '".$obj[$var]->text."', '".$date."')", $conn);
+				}
+			}
+			else
+			{
+				echo "Could not fetch Twitter Data";
+			}
+			$Query="select * from twitter order by showdate DESC";
+			
+			break;
+			
+		case "down" :
+			$Query="select * from twitter order by showdate DESC";
+			break;
+			
+		case "up" :
+			$Query="select * from twitter order by showdate ASC";
+			break;
+			
+	}
+}
+?>
+<html>
+
+<head>
+<title>Status Page</title>
+<meta name="GENERATOR" content="Microsoft FrontPage 3.0">
+<style type="text/css">
+BODY
+{
+ 	margin-left: 20px;
+ 	margin-top: 50px;
+ 	margin-right: 20px;
+}
+.Heading 
+{
+	COLOR: rgb(187,0,0); FONT-FAMILY: Verdana; FONT-SIZE: 10pt; FONT-WEIGHT: bold; TEXT-DECORATION: none
+}
+.button
+{
+	FONT-FAMILY: Verdana;
+	border:solid 1px #808000; 
+	FONT-SIZE: 9pt;
+	BACKGROUND-COLOR:#9999FF;
+	COLOR: rgb(255,255,255);
+	CURSOR: hand
+}
+.smlTextBlack
+{
+	font-family: Verdana, Helvetica, Arial;
+	font-size: 10pt;
+	color: rgb(0,0,0);
+}
+.smlTextBlackBold
+{
+	font-family: Verdana, Helvetica, Arial;
+	font-size: 10pt;
+	color: rgb(255,255,255);
+	BACKGROUND-COLOR:#9999FF;
+	FONT-WEIGHT: bold
+}
+</style>
+</head>
+<script language="javascript">
+
+//--------------------------------------------------------------------------------
+function Add()
+{
+	
+	if(obj.NValue.value == "")
+	{
+		alert("Please enter user name");
+		obj.NValue.focus();
+		return false;
+	}
+	obj.action='twitter_page.php?opt=add';
+	obj.submit();
+}
+</script>
+<body>
+
+<form name="frm" method="post">
+<div align="center">
+<table border="0" width="100%" cellspacing="0" cellpadding="2" class="smlTextBlack">
+  <tr><td height="141" align="center">
+<table border="0" width="400" cellspacing="0" cellpadding="2">
+    <tr>
+      <td width="100" align="right" height="50"></td>
+      <td width="10"></td>
+      <td width="290" class="Heading">Status Page </td>
+    </tr>
+    
+    <tr>
+      <td width="100" align="right" class="smlTextBlack">User Name</td>
+      <td width="10"></td>
+      <td width="290"><input type="text" name="NValue" size="20" class="smlTextBox"></td>
+    </tr>
+    
+    <tr>
+      <td width="100" align="right" class="smlTextBlack"></td>
+      <td width="10"></td>
+      <td width="290"></td>
+    </tr>
+    <tr>
+      <td width="100" align="right" class="smlTextBlack"></td>
+      <td width="10"></td>
+      <td width="290"><input type="button" value="Show Status" name="B1" class="Button" onClick="javascript: Add()">  <input type="reset" value="Reset" name="B2" class="Button"> </td>
+    </tr></table></td></tr>
+	<tr><td colspan="4"></td></tr>
+  <tr><td colspan="4" align="center" bgcolor="">
+  <?php
+  $res=mysql_query($Query, $conn);
+  if(mysql_affected_rows() != 0 )
+  {
+  $no=1;
+  ?>
+<table border="1" width="80%" cellspacing="0" cellpadding="2" class="smlTextBlack">
+  <tr>
+    <td class="smlTextBlackBold" width="2%" align="center">No.</td>
+    <td class="smlTextBlackBold" width="20%" align="center">Author</td>
+    <td class="smlTextBlackBold" width="50%" align="center">Status</td>
+	<td class="smlTextBlackBold" width="10%" align="center"><a href="twitter_page.php?opt=down"><img src="down_arrow.jpg" width="20" height="20" title="Descending Order" border="0"></a>&nbsp;&nbsp;Date&nbsp;&nbsp;<a href="twitter_page.php?opt=up"><img src="up_arrow.jpg" width="20" height="20" title="Ascending Order" border="0"></a></td>
+  </tr>
+  <?php
+  
+  while($row=mysql_fetch_array($res))
+  {
+  $row["showdate"]=date("d-m-Y H:i:s", strtotime($row["showdate"]));
+  ?>
+  <tr>
+    <td class="smlTextBlack" width="2%" align="center"><?=$no?></td>
+    <td class="smlTextBlack" width="20%" align="center"><?=$row["author"]?>&nbsp;</td>
+    <td class="smlTextBlack" width="60%" align="left"><?=$row["status"]?>&nbsp;</td>
+	<td class="smlTextBlack" width="10%" align="center"><?=$row["showdate"]?></td>
+  </tr>
+  <?php
+  $no++;
+  }
+   ?>
+  </table><?php 
+  }
+  
+  else
+  {
+  echo "OOOpssss...No Tweets !!!!";
+  }
+  ?></td></tr>
+</table>
+</form>
+<script language="javascript">
+var obj;
+obj= document.frm;
+</script>
+</body>
+</html>
+<?
+mysql_free_result($res);
+mysql_close($conn);
+?>
