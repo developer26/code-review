@@ -1,0 +1,12 @@
+$str ="This house is red";
+
+function reverseWords($str)
+{
+	$arr = explode(' ', $str);
+	$new_arr = array_reverse($arr);
+	$new_str = implode(' ', $new_arr);
+	
+	return $new_str;
+}
+
+print reverseWords($str);
